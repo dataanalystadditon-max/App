@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Custom scrollbar for table */
+        .scroller::-webkit-scrollbar { width: 8px; }
+        .scroller::-webkit-scrollbar-thumb { background-color: #cbd5e0; border-radius: 4px; }
+        .nav-tab {
+          position: relative;
+          padding: 6px 4px;
+          font-weight: 600;
+        }
+
+        .nav-tab.active {
+          opacity: 1;
+          color: #4f46e5;              /* indigo-600 */
+          background: white;
+          border-radius: 6px 6px 0 0;
+          padding: 6px 12px;
+        }
+
+        .nav-tab.active::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -6px;
+          height: 3px;
+          background: #4f46e5;
+        }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-indigo-700 p-4 shadow-md sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center text-white">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-chart-pie text-2xl"></i>
+                <span class="font-bold text-xl tracking-wide">Sales Dashboard Marketing Retail Additon Karya Sembada</span>
+            </div>
+
+        </div>
+    <nav class="bg-indigo-700 p-4 flex justify-between items-center">
+
+      <div class="flex space-x-6">
+        <button
+          class="nav-tab text-white opacity-80 hover:opacity-100 transition"
+          data-page="sales"
+          onclick="showPage('sales')">
+          Sales Dashboard
+        </button>
+
+        <button
+          class="nav-tab text-white opacity-80 hover:opacity-100 transition"
+          data-page="omzet"
+          onclick="showPage('omzet')">
+          Omzet vs Cost
+        </button>
+
+        <button
+          class="nav-tab text-white opacity-80 hover:opacity-100 transition"
+          data-page="marketing"
+          onclick="showPage('marketing')">
+          Biaya Marketing
+        </button>
+      </div>
+    </nav>
+
+
+
+
+
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-6">
+    <div id="page-sales">
+
+
+        
+        <!-- Loading -->
+        <div id="loading" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex justify-center items-center z-50">
+            <div class="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+                <h2 class="text-gray-700 font-bold text-lg">Processing Data...</h2>
+            </div>
+        </div>
+
+            <!-- Year Filter -->
+        <div class="flex items-center space-x-2">
+            <label class="text-sm opacity-90">Periode:</label>
+            <select id="yearFilter" class="bg-indigo-600 border border-indigo-400 text-white py-1 px-3 rounded focus:outline-none hover:bg-indigo-500 transition" onchange="renderDashboard()">
+                 <!-- Populated by JS -->
+            </select>
+        </div>
+
+        <!-- 3 Score Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            
+            <!-- Card 1: Total Revenue -->
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-green-500 relative overflow-hidden">
+                <div class="flex justify-between items-start z-10 relative">
+                    <div>
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Revenue</p>
+                        <h2 class="text-2xl font-bold text-gray-800" id="cardRevenue">0</h2>
+                        <div id="trendRevenue" class="flex items-center mt-2 text-sm font-medium text-gray-400">
+                            <!-- Trend injected here -->
+                            <span>-</span>
+                        </div>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg text-green-600 flex items-center justify-center">
+                        <i class="fas fa-money-bill-wave text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Best Customer -->
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500 relative overflow-hidden">
+                <div class="flex justify-between items-start z-10 relative">
+                    <div class="w-3/4">
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Best Customer</p>
+                        <h2 class="text-lg font-bold text-gray-800 truncate" id="cardBestCust">-</h2>
+                        <p class="text-blue-600 font-semibold text-sm mt-1" id="cardBestCustVal">0</p>
+                        <div id="trendCust" class="flex items-center mt-1 text-xs text-gray-400">
+                            <!-- Trend injected here -->
+                        </div>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg text-blue-600 flex items-center justify-center">
+                        <i class="fas fa-crown text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Best Product -->
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-purple-500 relative overflow-hidden">
+                <div class="flex justify-between items-start z-10 relative">
+                    <div class="w-3/4">
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Best Product</p>
+                        <h2 class="text-lg font-bold text-gray-800 truncate" id="cardBestProd">-</h2>
+                        <p class="text-purple-600 font-semibold text-sm mt-1" id="cardBestProdVal">0</p>
+                        <div id="trendProd" class="flex items-center mt-1 text-xs text-gray-400">
+                           <!-- Trend injected here -->
+                        </div>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg text-purple-600 flex items-center justify-center">
+                        <i class="fas fa-box-open text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Monthly Trend -->
+            <div class="bg-white p-5 rounded-xl shadow lg:col-span-2">
+                <h3 class="text-gray-700 font-bold mb-4">Monthly Sales Trend</h3>
+                <div class="h-64">
+                    <canvas id="chartMonthly"></canvas>
+                </div>
+            </div>
+
+            <!-- Product Type Distribution -->
+            <div class="bg-white p-5 rounded-xl shadow">
+                <h3 class="text-gray-700 font-bold mb-4">Product Type Share</h3>
+                <div class="h-64 flex justify-center">
+                    <canvas id="chartProduct"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Top Salesmen -->
+            <div class="bg-white p-5 rounded-xl shadow">
+                <h3 class="text-gray-700 font-bold mb-4">Omzet by Salesmen</h3>
+                <div class="h-64">
+                    <canvas id="chartSalesman"></canvas>
+                </div>
+            </div>
+
+            <!-- Customer Categories -->
+            <div class="bg-white p-5 rounded-xl shadow">
+                <h3 class="text-gray-700 font-bold mb-4">Tipe Pelanggan (Omzet)</h3> 
+                <div class="h-64">
+                    <canvas id="chartCategory"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Recap Table -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h3 class="text-gray-700 font-bold text-lg">Cek Omzet Pelanggan</h3>
+                
+                <!-- Table Filters -->
+                <div class="flex space-x-2 w-full md:w-auto flex-wrap gap-2 md:gap-0 md:space-x-2">
+                    <select id="filterTipe"
+                      class="bg-white border text-sm rounded px-3 py-2 focus:outline-none w-full md:w-36"
+                      onchange="onTipeChange()">
+
+                        <option value="all">All Tipe Pelanggan</option>
+                    </select>
+                    <!-- Customer Category Filter -->
+                    <select id="filterCategory" class="bg-white border text-sm rounded px-3 py-2 focus:outline-none w-full md:w-36" onchange="renderTable()">
+                        <option value="all">All Categories</option>
+                    </select>
+
+                    <!-- CUSTOMER MULTI SELECT -->
+                    <div class="relative w-full md:w-56">
+                      <input
+                        type="text"
+                        id="filterCustomerSearch"
+                        placeholder="Search Customer..."
+                        class="bg-white border text-sm rounded px-3 py-2 w-full focus:outline-none"
+                        oninput="filterCustomerOptions()"
+                        onclick="toggleCustomerDropdown(true)"
+                      >
+                      <button
+                        type="button"
+                        onclick="resetCustomerFilter()"
+                        class="text-xs text-red-600 mt-1 hover:underline">
+                        Reset Customer
+                      </button>
+
+
+                      <div
+                        id="customerDropdown"
+                        class="absolute z-30 bg-white border rounded shadow-md mt-1 max-h-48 overflow-y-auto hidden w-full">
+                      </div>
+                    </div>
+
+
+
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto max-h-96 scroller">
+                <table class="min-w-full leading-normal">
+                    <thead class="sticky top-0 z-10">
+                        <tr>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer Name</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">City</th>
+                            <!-- Removed NO FAKTUR column -->
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Month</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- JS renders rows here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t flex justify-end">
+                <span class="font-bold text-gray-700 mr-2">Grand Total:</span>
+                <span class="font-bold text-indigo-700" id="tableTotal">0</span>
+            </div>
+        </div>
+        
+        <div class="h-10"></div> <!-- Spacer -->
+        </div>
+        
+        <!-- ================= OMZET VS COST PAGE ================= -->
+        <div id="page-omzet" class="hidden">
+
+
+          
+          <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="px-6 py-4 border-b bg-gray-50">
+
+              <div class="flex gap-2 mb-3 items-center">
+                <select id="filterOmzetYear"
+                  class="border px-3 py-2 rounded text-sm"
+                  onchange="renderOmzetVsCostTable()">
+                </select>
+
+                <div id="monthFilter" class="flex flex-wrap gap-1 text-xs">
+                  <!-- JS will inject buttons -->
+                </div>
+
+              </div>
+
+
+
+              
+
+              <div class="overflow-x-auto overflow-y-auto max-h-[420px]">
+
+                <h3 class="text-lg font-bold text-gray-700 mb-2">
+                Summary of Omzet vs Biaya Marketing
+                </h3>
+
+                <table class="min-w-full border text-sm">
+
+                  <thead class="bg-gray-100 sticky top-0 z-20">
+                    <tr>
+                      <th rowspan="2" class="border px-3 py-2 bg-gray-200">Bulan</th>
+
+                      <th colspan="3" class="border text-center bg-blue-100 text-blue-800">RETAIL</th>
+                      <th colspan="3" class="border text-center bg-green-100 text-green-800">AGEN</th>
+                      <th colspan="3" class="border text-center bg-orange-100 text-orange-800">JAKARTA</th>
+                      <th colspan="3" class="border text-center bg-purple-100 text-purple-800">DIGITAL</th>
+
+                      <!-- HEADER TOTAL -->
+                      <th colspan="3" class="border text-center bg-gray-300">TOTAL</th>
+                    </tr>
+
+                    <tr>
+                      <!-- RETAIL -->
+                      <th class="border bg-blue-50 text-blue-800">Omzet</th>
+                      <th class="border bg-blue-50 text-blue-800">Cost</th>
+                      <th class="border bg-blue-50 text-blue-800">%</th>
+
+                      <!-- AGEN -->
+                      <th class="border bg-green-50 text-green-800">Omzet</th>
+                      <th class="border bg-green-50 text-green-800">Cost</th>
+                      <th class="border bg-green-50 text-green-800">%</th>
+
+                      <!-- JAKARTA -->
+                      <th class="border bg-orange-50 text-orange-800">Omzet</th>
+                      <th class="border bg-orange-50 text-orange-800">Cost</th>
+                      <th class="border bg-orange-50 text-orange-800">%</th>
+
+                      <!-- DIGITAL -->
+                      <th class="border bg-purple-50 text-purple-800">Omzet</th>
+                      <th class="border bg-purple-50 text-purple-800">Cost</th>
+                      <th class="border bg-purple-50 text-purple-800">%</th>
+
+                      <!-- TOTAL -->
+                      <th class="border bg-gray-200 font-bold">Omzet</th>
+                      <th class="border bg-gray-200 font-bold">Cost</th>
+                      <th class="border bg-gray-200 font-bold">%</th>
+                    </tr>
+
+                  </thead>
+
+
+
+                  <tbody id="tbodyOmzetVsCost"></tbody>
+                </table>
+              </div>
+
+
+
+
+
+              <!-- RINCIAN BIAYA MARKETING -->
+              <h3 class="text-gray-700 font-bold text-lg">
+                Rincian Biaya Marketing
+              </h3>
+
+              <div class="flex flex-wrap gap-4 mt-4">
+
+              <div class="flex gap-2 items-end">
+                <!-- BULAN -->
+                <div>
+                  <label class="text-xs text-gray-600">Bulan</label>
+                  <select
+                    id="filterBulan"
+                    class="border px-3 py-2 rounded text-sm"
+                    onchange="renderOmzetTable()"
+                  >
+                    <option value="all">Semua Bulan</option>
+                    <option value="01">Jan</option>
+                    <option value="02">Feb</option>
+                    <option value="03">Mar</option>
+                    <option value="04">Apr</option>
+                    <option value="05">Mei</option>
+                    <option value="06">Jun</option>
+                    <option value="07">Jul</option>
+                    <option value="08">Agu</option>
+                    <option value="09">Sep</option>
+                    <option value="10">Okt</option>
+                    <option value="11">Nov</option>
+                    <option value="12">Des</option>
+                  </select>
+                </div>
+
+                <!-- TAHUN -->
+                <div>
+                  <label class="text-xs text-gray-600">Tahun</label>
+                  <select
+                    id="filterTahun"
+                    class="border px-3 py-2 rounded text-sm"
+                    onchange="renderOmzetTable()"
+                  >
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                  </select>
+                </div>
+              </div>
+
+
+                <select id="filterDivisi"
+                  class="border px-3 py-2 rounded text-sm"
+                  onchange="renderOmzetTable()">
+                  <option value="all">All Divisi</option>
+                </select>
+
+
+                <div>
+                  <label class="text-xs text-gray-600">Customer</label>
+                  <input
+                    type="text"
+                    id="filterCustomer"
+                    list="customerList"
+                    placeholder="Ketik nama customer..."
+                    class="border px-3 py-2 rounded text-sm w-60"
+                    onkeyup="renderOmzetTable()"
+                  >
+                </div>
+
+
+
+
+
+              </div>
+
+
+           </div>
+
+           <div class="overflow-x-auto max-h-[500px] scroller">
+            <table class="min-w-full leading-normal">
+              <thead class="sticky top-0 bg-gray-100 z-10">
+                <tr>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Tanggal</th>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Customer</th>
+                  <th class="px-4 py-3 text-xs font-bold text-right">Nominal</th>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Sales</th>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Divisi</th>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Jenis Ajuan</th>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Metode Bayar</th>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Deskripsi</th>
+                  <th class="px-4 py-3 text-xs font-bold text-left">Progress</th>
+               </tr>
+              </thead>
+              <tbody id="omzetTableBody"></tbody>
+            </table>
+           </div>
+
+           <div class="px-6 py-3 bg-gray-50 border-t flex justify-end">
+            <span class="font-bold mr-2">Total:</span>
+            <span id="omzetTotal" class="font-bold text-indigo-700">0</span>
+           </div>
+         </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        let selectedCustomers = new Set();
+        let customerListCache = [];
+
+        // --- CONFIGURATION ---
+        const ALLOWED_PRODUCTS = ['Obat Cor', 'WS', 'AT-101', 'Lem Bison', 'Wallpass', 'ACTIVE'];
+        const EXCLUDED_SALESMEN = ['KANTOR NONPROYEK'];
+        const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        let selectedMonths = [];
+
+        function renderMonthFilter() {
+          const wrap = document.getElementById('monthFilter');
+          wrap.innerHTML = '';
+
+          MONTH_NAMES.forEach((m, i) => {
+            const mm = String(i + 1).padStart(2,'0');
+            const btn = document.createElement('button');
+            btn.textContent = m;
+            btn.className =
+              selectedMonths.includes(mm)
+                ? 'px-2 py-1 rounded bg-indigo-600 text-white'
+                : 'px-2 py-1 rounded bg-gray-200';
+
+            btn.onclick = () => {
+              selectedMonths.includes(mm)
+                ? selectedMonths = selectedMonths.filter(x => x !== mm)
+                : selectedMonths.push(mm);
+
+              renderMonthFilter();
+              renderOmzetVsCostTable();
+            };
+
+            wrap.appendChild(btn);
+          });
+        }
+
+
+        let rawData = [];
+        let chartInstances = {};
+
+        // --- INIT ---
+        window.onload = function() {
+          google.script.run
+            .withSuccessHandler(initDashboard)
+            .withFailureHandler(showError)
+            .getSalesData();
+
+          showPage('sales');
+        };
+
+
+        // --- HELPERS ---
+        // Format to standard number string (e.g., 123,456,789)
+        const formatNumber = (num) => new Intl.NumberFormat('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 0 
+        }).format(num);
+
+        const getYear = (dateStr) => {
+            const d = new Date(dateStr);
+            return isNaN(d) ? null : d.getFullYear();
+        };
+        const getMonthIndex = (dateStr) => {
+            const d = new Date(dateStr);
+            return isNaN(d) ? -1 : d.getMonth();
+        };
+        const formatCompact = (num) => Intl.NumberFormat('en', { notation: "compact" }).format(num);
+
+        // --- CORE LOGIC ---
+        function initDashboard(responseStr) {
+            const response = JSON.parse(responseStr);
+            if (response.status === 'error') return showError(response.message);
+
+            // CRITICAL FIX: Ensure 'amount' is treated as a number immediately.
+            rawData = response.data.map(d => ({
+                ...d,
+                // Use parseFloat to correctly handle salesamount
+                amount: parseFloat(d.amount) || 0 
+            }));
+
+            // Setup Year Filter
+            const years = [...new Set(rawData.map(d => getYear(d.date)).filter(y => y))].sort().reverse();
+            const yearSel = document.getElementById('yearFilter');
+            
+            years.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.text = y;
+                yearSel.appendChild(opt);
+            });
+
+            // Setup Table Filter (Customer Type)
+            const types = [...new Set(rawData.map(d => d.customerType).filter(t => t))].sort();
+            const typeSel = document.getElementById('filterTipe');
+            types.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.text = t;
+                typeSel.appendChild(opt);
+            });
+            
+            // Setup Table Filter (Customer Category)
+            const categories = [...new Set(rawData.map(d => d.category).filter(t => t))].sort();
+            const catSel = document.getElementById('filterCategory');
+            categories.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.text = c;
+                catSel.appendChild(opt);
+            });
+
+            document.getElementById('loading').style.display = 'none';
+            renderDashboard();
+
+            customerTypeMap = {};
+            rawData.forEach(d => {
+              if (d.customer && d.customerType) {
+                customerTypeMap[d.customer] = d.customerType;
+              }
+            });
+
+            // CACHE CUSTOMER LIST (UNIK)
+            customerListCache = [...new Set(
+              rawData
+                .map(d => d.customer)
+                .filter(Boolean)
+            )].sort();
+
+            populateCustomerByTipe();
+
+
+
+
+        }
+
+        function renderDashboard() {
+            const selectedYear = parseInt(document.getElementById('yearFilter').value);
+            const prevYear = selectedYear - 1;
+
+            // 1. Filter Data for Charts (Current Year)
+            const currentData = rawData.filter(d => getYear(d.date) === selectedYear);
+            const prevData = rawData.filter(d => getYear(d.date) === prevYear);
+
+            // 2. Update KPI Cards with Comparison
+            updateCards(currentData, prevData);
+
+            // 3. Update Charts
+            updateCharts(currentData);
+
+            // 4. Update Table (Uses current year filter + table specific filters)
+            renderTable();
+        }
+
+        function updateCards(curr, prev) {
+            // Helper to sum (amount is now guaranteed to be a number)
+            const sum = arr => arr.reduce((acc, item) => acc + item.amount, 0);
+            
+            // Helper to get Best Group
+            const getBest = (arr, key) => {
+                const groups = {};
+                arr.forEach(i => groups[i[key]] = (groups[i[key]] || 0) + i.amount);
+                let bestKey = '-';
+                let bestVal = 0;
+                Object.entries(groups).forEach(([k, v]) => {
+                    if (v > bestVal && k && k !== 'undefined') { bestVal = v; bestKey = k; }
+                });
+                return { key: bestKey, val: bestVal };
+            };
+
+            const formatTrend = (currVal, prevVal) => {
+                if (prevVal === 0) return `<span class="text-gray-400">No prev data</span>`;
+                const pct = ((currVal - prevVal) / prevVal) * 100;
+                const isUp = pct >= 0;
+                const color = isUp ? 'text-green-500' : 'text-red-500';
+                const icon = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
+                return `<span class="${color} font-bold"><i class="fas ${icon} text-xs mr-1"></i>${Math.abs(pct).toFixed(1)}%</span> vs Last Year`;
+            };
+
+            // Card 1: Revenue 
+            const revCurr = sum(curr);
+            const revPrev = sum(prev);
+            document.getElementById('cardRevenue').innerText = formatNumber(revCurr);
+            document.getElementById('trendRevenue').innerHTML = formatTrend(revCurr, revPrev);
+
+            // Card 2: Best Customer
+            const custCurr = getBest(curr, 'customer');
+            const custPrevData = prev.filter(d => d.customer === custCurr.key);
+            const custPrevVal = sum(custPrevData);
+            document.getElementById('cardBestCust').innerText = custCurr.key;
+            document.getElementById('cardBestCustVal').innerText = formatNumber(custCurr.val);
+
+            // Card 3: Best Product (Restricted to Allowed List)
+            const filterProd = d => ALLOWED_PRODUCTS.includes(d.productType);
+            const prodCurr = getBest(curr.filter(filterProd), 'productType');
+            document.getElementById('cardBestProd').innerText = prodCurr.key;
+            document.getElementById('cardBestProdVal').innerText = formatNumber(prodCurr.val);
+        }
+
+        function updateCharts(data) {
+            // -- Product Chart (Restricted, DESCENDING, Percentage in Tooltip) --
+            const prodGroups = {};
+            ALLOWED_PRODUCTS.forEach(p => prodGroups[p] = 0); 
+            data.forEach(d => {
+                if (ALLOWED_PRODUCTS.includes(d.productType)) {
+                    prodGroups[d.productType] += d.amount;
+                }
+            });
+            
+            // Sort Descendingly
+            const prodSorted = Object.entries(prodGroups).sort((a,b) => b[1] - a[1]);
+            
+            drawChart('chartProduct', 'doughnut', prodSorted.map(i=>i[0]), prodSorted.map(i=>i[1]), {
+                colors: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
+                hasPercentage: true 
+            });
+
+            // -- Salesman Chart (Top 5, Exclude specific) --
+            const smGroups = {};
+            data.forEach(d => {
+                if (!EXCLUDED_SALESMEN.includes(d.salesman)) {
+                    smGroups[d.salesman] = (smGroups[d.salesman] || 0) + d.amount;
+                }
+            });
+            const smSorted = Object.entries(smGroups).sort((a,b) => b[1] - a[1]).slice(0, 11);
+            drawChart('chartSalesman', 'bar', smSorted.map(i=>i[0]), smSorted.map(i=>i[1]), { color: '#3B82F6' });
+
+            // -- Customer Categories (Omzet) -> Tipe Pelanggan --
+            const typeGroups = {}; 
+            data.forEach(d => typeGroups[d.customerType] = (typeGroups[d.customerType] || 0) + d.amount);
+            const typeSorted = Object.entries(typeGroups).sort((a,b) => b[1] - a[1]);
+            drawChart('chartCategory', 'bar', typeSorted.map(i=>i[0]), typeSorted.map(i=>i[1]), { color: '#F59E0B', indexAxis: 'y' });
+
+            // -- Monthly Trend (Transparent Blue Color) --
+            const mData = new Array(12).fill(0);
+            data.forEach(d => {
+                const index = getMonthIndex(d.date);
+                if(index >= 0) mData[index] += d.amount;
+            });
+            drawChart('chartMonthly', 'line', MONTH_NAMES, mData, { 
+                color: '#4F46E5', 
+                fill: 'start',
+                backgroundColor: 'rgba(79, 70, 229, 0.2)' 
+            });
+        }
+
+        function drawChart(id, type, labels, data, opts) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (chartInstances[id]) chartInstances[id].destroy();
+
+            // Set background color correctly based on type and opts
+            let backgroundColor = opts.colors || opts.color;
+            if (type === 'line' && opts.backgroundColor) {
+                backgroundColor = opts.backgroundColor; 
+            } else if (type !== 'doughnut') {
+                 backgroundColor = opts.color; 
+            }
+            
+            // Tooltip callback for percentage in Donut chart
+            const tooltipCallbacks = opts.hasPercentage && type === 'doughnut' ? {
+                label: function(context) {
+                    const label = context.label || '';
+                    const currentValue = context.raw;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? ((currentValue / total) * 100).toFixed(1) + '%' : '0%';
+                    // UPDATED: Use formatNumber helper
+                    return `${label}: ${formatNumber(currentValue)} (${percentage})`;
+                }
+            } : {
+                // Default tooltip for other charts
+                label: function(context) {
+                    const label = context.dataset.label || '';
+                    // UPDATED: Use formatNumber helper
+                    return `${label}: ${formatNumber(context.raw)}`;
+                }
+            };
+
+
+            const config = {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sales',
+                        data: data,
+                        backgroundColor: backgroundColor,
+                        borderColor: opts.color,
+                        borderWidth: type === 'line' ? 2 : 0,
+                        tension: 0.3,
+                        fill: opts.fill || false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: opts.indexAxis || 'x',
+                    plugins: { 
+                        legend: { display: type === 'doughnut', position: 'bottom' },
+                        tooltip: {
+                            callbacks: tooltipCallbacks 
+                        }
+                    },
+                    scales: type === 'doughnut' ? {
+                        x: { display: false },
+                        y: { display: false }
+                    } : {
+                        x: { 
+                            ticks: { 
+                                callback: function(value, index, values) { 
+                                    if (type === 'bar' && opts.indexAxis === 'y') {
+                                        return formatCompact(value);
+                                    }
+                                    return this.getLabelForValue(value); 
+                                } 
+                            } 
+                        },
+                        y: { 
+                            ticks: { 
+                                callback: function(value, index, values) { 
+                                    if (type === 'bar' && opts.indexAxis === 'y') {
+                                        return this.getLabelForValue(value);
+                                    }
+                                    return formatCompact(value);
+                                } 
+                            } 
+                        }
+                    }
+                }
+            };
+            chartInstances[id] = new Chart(ctx, config);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            const year = parseInt(document.getElementById('yearFilter').value);
+            const typeFilter = document.getElementById('filterTipe').value;
+            const categoryFilter = document.getElementById('filterCategory').value;
+            const nameFilter = document.getElementById('filterCustomerSearch').value.toLowerCase();
+
+            // Aggregation map: Key = Customer|Type|City|Month, Value = { name, type, city, month, total }
+            const aggregatedSales = new Map();
+            
+            rawData.forEach(d => {
+                const itemYear = getYear(d.date);
+                if (itemYear !== year) return;
+                
+                const itemMonthIndex = getMonthIndex(d.date);
+                if (itemMonthIndex < 0) return;
+                
+                // Apply Filters
+                if (typeFilter !== 'all' && d.customerType !== typeFilter) return;
+                if (categoryFilter !== 'all' && d.category !== categoryFilter) return;
+                if (
+                  selectedCustomers.size > 0 &&
+                  !selectedCustomers.has(d.customer)
+                ) return;
+
+
+                const name = d.customer || 'N/A';
+                const type = d.customerType || 'N/A';
+                const city = d.city || 'N/A';
+                const month = MONTH_NAMES[itemMonthIndex];
+                const amount = d.amount;
+
+                // Create a unique key for aggregation (Customer + Type + City + Month)
+                const key = `${name}|${type}|${city}|${month}`;
+
+                if (aggregatedSales.has(key)) {
+                    aggregatedSales.get(key).total += amount;
+                } else {
+                    aggregatedSales.set(key, {
+                        name, 
+                        type, 
+                        city,
+                        month,
+                        total: amount
+                    });
+                }
+            });
+            
+            // Convert Map values to array
+            const rows = Array.from(aggregatedSales.values());
+            
+            // Sorting Logic: By Customer Name (A-Z)
+            rows.sort((a, b) => {
+                if (a.name < b.name) return -1;
+                if (a.name > b.name) return 1;
+                return 0;
+            });
+
+
+            // Render
+            let grandTotal = 0;
+            rows.forEach(r => {
+                grandTotal += r.total;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="px-5 py-3 border-b border-gray-200 text-sm font-medium text-gray-900">${r.name}</td>
+                    <td class="px-5 py-3 border-b border-gray-200 text-sm text-gray-600">${r.type}</td>
+                    <td class="px-5 py-3 border-b border-gray-200 text-sm text-gray-600">${r.city}</td>
+                    <td class="px-5 py-3 border-b border-gray-200 text-sm text-gray-600">${r.month}</td>
+                    <td class="px-5 py-3 border-b border-gray-200 text-sm text-right font-bold text-indigo-600">${formatNumber(r.total)}</td>
+                `; 
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('tableTotal').innerText = formatNumber(grandTotal);
+        }
+
+        function showError(msg) {
+            // Note: Using console.error instead of alert as per best practices
+            console.error("Dashboard Error:", msg); 
+            // Optional: show a user-friendly message in the dashboard area
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        let omzetLoaded = false;
+
+        function showPage(page) {
+          // 1. Hide all pages
+          document.getElementById('page-sales').classList.add('hidden');
+          document.getElementById('page-omzet').classList.add('hidden');
+          // kalau nanti ada page marketing:
+          // document.getElementById('page-marketing')?.classList.add('hidden');
+
+          // 2. Show selected page
+          if (page === 'sales') {
+            document.getElementById('page-sales').classList.remove('hidden');
+          }
+
+          if (page === 'omzet') {
+            document.getElementById('page-omzet').classList.remove('hidden');
+
+            if (!omzetLoaded) {
+              loadOmzetVsCost();
+              omzetLoaded = true;
+            }
+          }
+
+          // 3. RESET semua tab highlight
+          document.querySelectorAll('.nav-tab').forEach(btn => {
+            btn.classList.remove('active');
+          });
+
+          // 4. AKTIFKAN tab yang diklik
+          const activeBtn = document.querySelector(`.nav-tab[data-page="${page}"]`);
+          if (activeBtn) {
+            activeBtn.classList.add('active');
+          }
+        }
+
+
+
+
+
+        let omzetData = [];
+        function loadOmzetVsCost() {
+          document.getElementById('loading').style.display = 'flex';
+
+          google.script.run
+            .withSuccessHandler(res => {
+              console.log('OMZET DATA:',res);
+
+
+              document.getElementById('loading').style.display = 'none';
+
+              if (res.status !== 'success') {
+                console.error(res.message);
+                return;
+              }
+
+              omzetData = res.data;
+              // INIT FILTER TAHUN SUMMARY
+              initOmzetFilterYear();
+              // INIT FILTER TAHUN
+              initFilterTahunBiaya();
+
+              
+
+              // Populate Customer filter
+              const custSet = new Set(omzetData.map(d => d.customer).filter(Boolean));
+              const custSel = document.getElementById('filterCustomer');
+              custSel.innerHTML = '<option value="all">All Customer</option>';
+              custSet.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.text = c;
+                custSel.appendChild(opt);
+              });
+
+              // Populate Divisi filter
+              const divSet = new Set(omzetData.map(d => d.divisi).filter(Boolean));
+              const divSel = document.getElementById('filterDivisi');
+              divSel.innerHTML = '<option value="all">All Divisi</option>';
+              divSet.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.text = d;
+                divSel.appendChild(opt);
+              });
+
+              renderMonthFilter();
+              renderOmzetVsCostTable();
+              renderOmzetTable();
+              
+            })
+            .withFailureHandler(err => {
+              document.getElementById('loading').style.display = 'none';
+              console.error(err);
+            })
+            .getOmzetVsCostData();
+        }
+
+        function getQuarter(month) {
+          return Math.ceil(month / 3);
+        }
+
+
+        function renderOmzetVsCostTable() {
+          const year = document.getElementById('filterOmzetYear').value;
+          const months = selectedMonths;
+
+          const TYPES = ['RETAIL', 'AGEN', 'JAKARTA', 'DIGITAL'];
+          const map = {};
+          const quarterTotal = {};
+          const grandTotal = {};
+
+          const grand = {};
+          ['RETAIL','AGEN','JAKARTA','DIGITAL'].forEach(t => {
+            grand[t] = { omzet: 0, cost: 0 };
+          });
+
+
+          // === OMZET ===
+          rawData.forEach(r => {
+            if (!r.date || !r.amount || !r.customerType) return;
+
+            const d = new Date(r.date);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2,'0');
+            if (String(y) !== year) return;
+            if (months.length && !months.includes(m)) return;
+
+            const type = normalizeDivisi(r.customerType);
+            if (!type) return;
+
+
+            const bulan = `${y}-${m}`;
+            const q = getQuarter(Number(m));
+
+            map[bulan] ??= {};
+            map[bulan][type] ??= { omzet: 0, cost: 0 };
+            if (type === 'RETAIL') {
+              map[bulan][type].omzet += calcRetailOmzet(r);
+            } else {
+              map[bulan][type].omzet += r.amount;
+            }
+
+
+            quarterTotal[q] ??= {};
+            quarterTotal[q][type] ??= { omzet: 0, cost: 0 };
+            quarterTotal[q][type].omzet += r.amount;
+
+            grandTotal[type] ??= { omzet: 0, cost: 0 };
+            grandTotal[type].omzet += r.amount;
+          });
+
+          // === COST ===
+          omzetData.forEach(r => {
+            if (!r.tanggal || !r.nominal || !r.divisi) return;
+            const [y,m] = r.tanggal.split('-');
+            if (y !== year) return;
+            if (months.length && !months.includes(m)) return;
+
+            const type = normalizeDivisi(r.divisi);
+            if (!type) return;
+
+
+            const bulan = `${y}-${m}`;
+            const q = getQuarter(Number(m));
+
+            map[bulan] ??= {};
+            map[bulan][type] ??= { omzet: 0, cost: 0 };
+            map[bulan][type].cost += r.nominal;
+
+            quarterTotal[q] ??= {};
+            quarterTotal[q][type] ??= { omzet: 0, cost: 0 };
+            quarterTotal[q][type].cost += r.nominal;
+
+            grandTotal[type] ??= { omzet: 0, cost: 0 };
+            grandTotal[type].cost += r.nominal;
+          });
+
+          // === RENDER ===
+          const tbody = document.getElementById('tbodyOmzetVsCost');
+          tbody.innerHTML = '';
+          const quarterMap = {};
+
+
+          Object.keys(map).sort().forEach(bulan => {
+
+            let totalOmzetRow = 0;
+            let totalCostRow = 0;
+            
+            const mNum = Number(bulan.split('-')[1]);
+            const q = Math.ceil(mNum / 3);
+
+            quarterMap[q] ??= {};
+            TYPES.forEach(t => {
+              quarterMap[q][t] ??= { omzet: 0, cost: 0 };
+              quarterMap[q][t].omzet += map[bulan][t]?.omzet || 0;
+              quarterMap[q][t].cost  += map[bulan][t]?.cost || 0;
+            });
+
+
+            const label = MONTH_NAMES[Number(bulan.split('-')[1]) - 1];
+            const tr = document.createElement('tr');
+
+            // Kolom BULAN
+            tr.innerHTML = `
+              <td class="border px-3 py-2 font-medium bg-gray-50">
+                ${label}
+              </td>
+            `;
+
+            // === PER DIVISI ===
+            TYPES.forEach(t => {
+              const d = map[bulan][t] || { omzet: 0, cost: 0 };
+
+              totalOmzetRow += d.omzet;
+              totalCostRow += d.cost;
+              grand[t].omzet += d.omzet;
+              grand[t].cost  += d.cost;
+
+
+              tr.innerHTML += `
+                <td class="border px-2 text-right ${divColor(t)}">
+                  ${formatShort(d.omzet)}
+                </td>
+                <td class="border px-2 text-right ${divColor(t)}">
+                  ${formatShort(d.cost)}
+                </td>
+                <td class="border px-2 text-right font-semibold ${divColor(t)}">
+                  ${formatPercent(d.cost, d.omzet)}
+                </td>
+              `;
+            });
+
+            // === TOTAL BULAN (1x SAJA) ===
+            tr.innerHTML += `
+              <td class="border px-2 text-right font-bold bg-gray-200">
+                ${formatShort(totalOmzetRow)}
+              </td>
+              <td class="border px-2 text-right font-bold bg-gray-200">
+                ${formatShort(totalCostRow)}
+              </td>
+              <td class="border px-2 text-right font-bold bg-gray-200">
+                ${formatPercent(totalCostRow, totalOmzetRow)}
+              </td>
+            `;
+
+            tbody.appendChild(tr);
+
+
+            if (
+              [3,6,9,12].includes(mNum) &&
+              isQuarterComplete(Math.ceil(mNum / 3), months)
+            ) {
+
+              const trQ = document.createElement('tr');
+              trQ.className = 'bg-yellow-100 font-semibold';
+
+              trQ.innerHTML = `
+                <td class="border px-3 py-2">TOTAL Q${Math.ceil(mNum/3)}</td>
+              `;
+
+              let qOmzet = 0;
+              let qCost = 0;
+
+              TYPES.forEach(t => {
+                const d = quarterMap[Math.ceil(mNum/3)][t];
+                qOmzet += d.omzet;
+                qCost += d.cost;
+
+                trQ.innerHTML += `
+                  <td class="border px-2 text-right">${formatShort(d.omzet)}</td>
+                  <td class="border px-2 text-right">${formatShort(d.cost)}</td>
+                  <td class="border px-2 text-right">
+                    ${formatPercent(d.cost, d.omzet)}
+                  </td>
+                `;
+              });
+
+              trQ.innerHTML += `
+                <td class="border px-2 text-right">${formatShort(qOmzet)}</td>
+                <td class="border px-2 text-right">${formatShort(qCost)}</td>
+                <td class="border px-2 text-right">
+                  ${formatPercent(qCost, qOmzet)}
+                </td>
+              `;
+
+              tbody.appendChild(trQ);
+            }
+
+
+
+          });
+
+          // === GRAND TOTAL (PALING BAWAH, 1x SAJA) ===
+          const trGrand = document.createElement('tr');
+          trGrand.className = 'bg-gray-300 font-bold';
+
+          trGrand.innerHTML = `
+            <td class="border px-3 py-2">TOTAL</td>
+          `;
+
+          let totalOmzetAll = 0;
+          let totalCostAll = 0;
+
+          TYPES.forEach(t => {
+            totalOmzetAll += grand[t].omzet;
+            totalCostAll += grand[t].cost;
+
+            trGrand.innerHTML += `
+              <td class="border px-2 text-right">${formatShort(grand[t].omzet)}</td>
+              <td class="border px-2 text-right">${formatShort(grand[t].cost)}</td>
+              <td class="border px-2 text-right">
+                ${formatPercent(grand[t].cost, grand[t].omzet)}
+              </td>
+            `;
+          });
+
+          trGrand.innerHTML += `
+            <td class="border px-2 text-right">${formatShort(totalOmzetAll)}</td>
+            <td class="border px-2 text-right">${formatShort(totalCostAll)}</td>
+            <td class="border px-2 text-right">
+              ${formatPercent(totalCostAll, totalOmzetAll)}
+            </td>
+          `;
+
+          tbody.appendChild(trGrand);
+
+
+        }
+
+
+
+        function initOmzetFilterYear() {
+          const sel = document.getElementById('filterOmzetYear');
+          if (!sel) return;
+
+          sel.innerHTML = '';
+
+          const years = new Set();
+
+          omzetData.forEach(r => {
+            if (!r.tanggal) return;
+            const y = r.tanggal.slice(0,4);
+            years.add(Number(y));
+          })
+          ;
+
+          [...years].sort().forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.text = y;
+            sel.appendChild(opt);
+          });
+
+          // ✅ DEFAULT 2025
+          sel.value = years.has(2025) ? 2025 : Math.max(...years);
+        }
+
+
+        function renderOmzetTable() {
+          const tbody = document.getElementById('omzetTableBody');
+          tbody.innerHTML = '';
+
+          let total = 0;
+
+          const bulanFilter = document.getElementById('filterBulan').value;
+          const tahunFilter = document.getElementById('filterTahun').value;
+          const fCustomer = document.getElementById('filterCustomer').value;
+          const fDivisi = document.getElementById('filterDivisi').value;
+          const customerKeyword = document
+            .getElementById('filterCustomer')
+            .value
+            .toLowerCase();
+
+
+          omzetData.forEach(d => {
+
+            if (!d.tanggal) return;
+
+            const dateObj = new Date(d.tanggal);
+            if (isNaN(dateObj)) return;
+
+            const bulan = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const tahun = String(dateObj.getFullYear());
+
+            // FILTER BULAN & TAHUN
+            if (tahun !== tahunFilter) return;
+            if (bulanFilter !== 'all' && bulan !== bulanFilter) return;
+
+            // FILTER CUSTOMER
+            if (
+              customerKeyword &&
+              !d.customer.toLowerCase().includes(customerKeyword)
+            ) return;
+
+
+            // FILTER DIVISI
+            if (fDivisi !== 'all' && d.divisi !== fDivisi) return;
+
+            // SEARCH
+            const combined = `
+              ${d.tanggal}
+              ${d.customer}
+              ${d.sales}
+              ${d.divisi}
+              ${d.jenisAjuan}
+              ${d.metodePembayaran}
+              ${d.deskripsi}
+              ${d.progress}
+            `.toLowerCase();
+
+            total += d.nominal || 0;
+
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50';
+
+            tr.innerHTML = `
+              <td class="px-4 py-2">${formatDateDDMMYYYY(d.tanggal)}</td>
+              <td class="px-4 py-2 text-sm">${d.customer}</td>
+              <td class="px-4 py-2 text-sm text-right font-semibold text-indigo-600">
+                ${formatNumber(d.nominal)}
+              </td>
+              <td class="px-4 py-2 text-sm">${d.sales}</td>
+              <td class="px-4 py-2 text-sm">${d.divisi}</td>
+              <td class="px-4 py-2 text-sm">${d.jenisAjuan}</td>
+              <td class="px-4 py-2 text-sm">${d.metodePembayaran}</td>
+              <td class="px-4 py-2 text-sm">${d.deskripsi}</td>
+              <td class="px-4 py-2 text-sm">${d.progress}</td>
+            `;
+
+            tbody.appendChild(tr);
+          });
+
+          document.getElementById('omzetTotal').innerText = formatNumber(total);
+        }
+
+
+
+        function formatShort(n) {
+          if (n === null || n === undefined || isNaN(n)) return '0.00';
+
+          const abs = Math.abs(n);
+          let value = 0;
+          let suffix = '';
+
+          if (abs >= 1_000_000_000) {
+            value = n / 1_000_000_000;
+            suffix = ' M';
+          } else if (abs >= 1_000_000) {
+            value = n / 1_000_000;
+            suffix = ' JT';
+          } else if (abs >= 1_000) {
+            value = n / 1_000;
+            suffix = ' RB';
+          } else {
+            value = n;
+            suffix = '';
+          }
+
+          return value.toFixed(2) + suffix;
+        }
+
+
+
+        function isQuarterComplete(q, selectedMonths) {
+          const quarterMonths = {
+            1: ['01','02','03'],
+            2: ['04','05','06'],
+            3: ['07','08','09'],
+            4: ['10','11','12']
+          };
+
+          // Jika tidak filter bulan → dianggap lengkap
+          if (!selectedMonths || selectedMonths.length === 0) return true;
+
+          return quarterMonths[q].every(m => selectedMonths.includes(m));
+        }
+
+
+
+
+        function formatPercent(cost, omzet) {
+          if (!omzet || omzet === 0) return '-';
+          return ((cost / omzet) * 100).toFixed(1) + '%';
+        }
+
+
+
+
+
+        function divColor(type) {
+          return {
+            RETAIL: 'bg-blue-50',
+            AGEN: 'bg-green-50',
+            JAKARTA: 'bg-yellow-50',
+            DIGITAL: 'bg-purple-50'
+          }[type] || '';
+        }
+
+        function divHeaderColor(t) {
+          return {
+            RETAIL: 'bg-blue-100 text-blue-800',
+            AGEN: 'bg-green-100 text-green-800',
+            JAKARTA: 'bg-orange-100 text-orange-800',
+            DIGITAL: 'bg-purple-100 text-purple-800'
+          }[t] || '';
+        }
+
+        function normalizeDivisi(v) {
+          if (!v) return null;
+          const x = v.toUpperCase();
+
+          if (x.includes('DIGITAL')) return 'DIGITAL';
+          if (x.includes('RETAIL')) return 'RETAIL';
+          if (x.includes('AGEN')) return 'AGEN';
+          if (x.includes('JAKARTA')) return 'JAKARTA';
+
+          return null;
+        }
+
+        const RETAIL_SPECIAL_CUSTOMERS = [
+          'HARTONO TIRTA LESTARI. PT',
+          'PUTRA LAUTAN SEJAHTERA. PT',
+          'MITRA ABADI LINTAS GENERASI PT'
+        ];
+
+        const SALES_NONPROYEK = 'KANTOR NONPROYEK';
+        const EXCLUDED_PRODUCT_TYPE = 'WS';
+        const EXCLUDED_PRODUCT_TYPES = ['WS', 'KEMASAN'];
+
+
+        function isRetailSpecialCustomer(customer) {
+          return RETAIL_SPECIAL_CUSTOMERS.includes((customer || '').toUpperCase().trim());
+        }
+
+        function isWSProduct(productType) {
+          return (productType || '').toUpperCase().trim() === EXCLUDED_PRODUCT_TYPE;
+        }
+
+        function isNonProyekSales(sales) {
+          return (sales || '').toUpperCase().trim() === SALES_NONPROYEK;
+        }
+
+        function calcRetailOmzet(row) {
+          const divisi = normalizeDivisi(row.customerType);
+          if (divisi !== 'RETAIL') return 0;
+
+          const customer   = (row.customer || '').toUpperCase().trim();
+          const sales      = (row.sales || '').toUpperCase().trim();
+          const product    = (row.productType || '').toUpperCase().trim();
+          const amount     = row.amount || 0;
+
+          const isSpecialCustomer = isRetailSpecialCustomer(customer);
+          const isNonProyek       = isNonProyekSales(sales);
+          const isWS              = isWSProduct(product);
+
+          // === KOMPONEN 2 ===
+          if (isSpecialCustomer) {
+            return amount;
+          }
+
+          // === KOMPONEN 1 ===
+          if (!isNonProyek && !isWS) {
+            return amount;
+          }
+
+          // === KOMPONEN 3 ===
+          if (isNonProyek && !isWS && !isSpecialCustomer) {
+            return amount;
+          }
+
+          return 0;
+        }
+
+        function formatDateDDMMYYYY(dateStr) {
+          if (!dateStr) return '';
+
+          // handle YYYY-MM-DD atau Date object
+          const d = new Date(dateStr);
+          if (isNaN(d)) return dateStr;
+
+          const dd = String(d.getDate()).padStart(2, '0');
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const yyyy = d.getFullYear();
+
+          return `${dd}/${mm}/${yyyy}`;
+        }
+
+
+
+
+
+
+        let customerTypeMap = {};
+
+
+
+
+        function renderCustomerOptions(list) {
+          const wrap = document.getElementById('customerDropdown');
+          wrap.innerHTML = '';
+
+          list.forEach(name => {
+            const row = document.createElement('label');
+            row.className = 'flex items-center gap-2 px-3 py-1 text-sm hover:bg-gray-100 cursor-pointer';
+
+            row.innerHTML = `
+              <input type="checkbox" value="${name}">
+              <span>${name}</span>
+            `;
+
+            const cb = row.querySelector('input');
+            cb.checked = selectedCustomers.has(name);
+
+            cb.onchange = () => {
+              cb.checked
+                ? selectedCustomers.add(name)
+                : selectedCustomers.delete(name);
+
+              renderTable(); // 🔥 langsung filter table
+            };
+
+            wrap.appendChild(row);
+          });
+        }
+
+
+        function filterCustomerOptions() {
+          const keyword = document
+            .getElementById('filterCustomerSearch')
+            .value
+            .toLowerCase();
+
+          const filtered = customerListCache.filter(c =>
+            c.toLowerCase().includes(keyword)
+          );
+
+          renderCustomerOptions(filtered);
+          toggleCustomerDropdown(true);
+        }
+
+
+        function toggleCustomerDropdown(show) {
+          const el = document.getElementById('customerDropdown');
+          el.classList.toggle('hidden', !show);
+        }
+
+        document.addEventListener('click', e => {
+          if (!e.target.closest('#filterCustomerSearch') &&
+              !e.target.closest('#customerDropdown')) {
+            toggleCustomerDropdown(false);
+          }
+        });
+
+
+        function onTipeChange() {
+          selectedCustomers.clear(); // reset customer terpilih
+          document.getElementById('filterCustomerSearch').value = '';
+
+          populateCustomerByTipe();
+          renderTable();
+        }
+
+        function populateCustomerByTipe() {
+          const tipe = document.getElementById('filterTipe').value;
+
+          let filteredCustomers;
+
+          if (tipe === 'all') {
+            filteredCustomers = [...new Set(
+              rawData.map(d => d.customer).filter(Boolean)
+            )];
+          } else {
+            filteredCustomers = [...new Set(
+              rawData
+                .filter(d => d.customerType === tipe)
+                .map(d => d.customer)
+                .filter(Boolean)
+            )];
+          }
+
+          filteredCustomers.sort();
+          customerListCache = filteredCustomers;
+
+          renderCustomerOptions(customerListCache);
+        }
+
+
+
+        function resetCustomerFilter() {
+          selectedCustomers.clear();
+          document.getElementById('filterCustomerSearch').value = '';
+          renderCustomerOptions(customerListCache);
+          renderTable();
+        }
+
+
+        function initFilterTahunBiaya() {
+          const sel = document.getElementById('filterTahun');
+          sel.innerHTML = '';
+
+          const years = [...new Set(
+            omzetData
+              .map(d => d.tanggal?.slice(0,4))
+              .filter(Boolean)
+          )].sort().reverse();
+
+          years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.text = y;
+            sel.appendChild(opt);
+          });
+
+          // default tahun terbaru
+          sel.value = years[0];
+        }
+
+
+
+
+        
+
+        
+
+
+
+
+
+
+    </script>
+</body>
+</html>
