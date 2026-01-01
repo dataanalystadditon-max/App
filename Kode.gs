@@ -138,6 +138,33 @@ function getOmzetVsCostData() {
   }
 }
 
+/**
+ * Simpan input Biaya Marketing dari popup form
+ * Data masuk ke sheet "DATA: Transaksi" kolom I:P
+ */
+function submitBiayaMarketing(data) {
+  try {
+    const ss = SpreadsheetApp.openById('1ntLJJR_V7SEXDLuh2FMLp-dNgpanx6-yF7oKHbN-s08');
+    const sheet = ss.getSheetByName('DATA: Transaksi');
+
+    sheet.appendRow([
+      '', '', '', '', '', '', '', '', // A–H
+      data.tanggal,                  // I
+      data.customer,                 // J
+      data.nominal,                  // K
+      data.sales,                    // L
+      data.divisi,                   // M
+      data.jenisAjuan,               // N
+      data.metodePembayaran,         // O
+      data.deskripsi                 // P
+    ]);
+
+    return { status: 'success' };
+
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  }
+}
 
 
 
