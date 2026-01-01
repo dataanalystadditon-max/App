@@ -301,6 +301,12 @@
 
               <div class="overflow-x-auto overflow-y-auto max-h-[420px]">
 
+                <button onclick="openBiayaMarketingModal()"
+                  style="padding:8px 14px;background:#5641f2;color:white;border-radius:6px;margin-bottom:10px">
+                  + Input Biaya Marketing
+                </button>
+
+
                 <h3 class="text-lg font-bold text-gray-700 mb-2">
                 Summary of Omzet vs Biaya Marketing
                 </h3>
@@ -463,6 +469,75 @@
         </div>
 
     </div>
+
+    <div id="biayaModalOverlay" style="
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      z-index:1000;
+    ">
+      <div style="
+        background:#fff;
+        width:420px;
+        margin:6% auto;
+        padding:20px;
+        border-radius:10px;
+      ">
+        <h3>Form Input Biaya Marketing</h3>
+
+        <label>Tanggal</label>
+        <input type="date" id="bmTanggal" style="width:100%"><br><br>
+
+        <label>Nama Pelanggan</label>
+        <select id="bmCustomer" style="width:100%"></select><br><br>
+
+        <label>Nominal</label>
+        <input type="number" id="bmNominal" style="width:100%"><br><br>
+
+        <label>Sales</label>
+        <select id="bmSales" onchange="bmUpdateDivisi()" style="width:100%"></select><br><br>
+
+        <label>Divisi</label>
+        <input type="text" id="bmDivisi" readonly style="width:100%"><br><br>
+
+        <label>Jenis Ajuan</label>
+        <select id="bmJenis" style="width:100%">
+          <option>Cashback</option>
+          <option>CN</option>
+          <option>Selling Out</option>
+          <option>Reward Toko</option>
+          <option>Reward Sales</option>
+          <option>Support</option>
+          <option>Klaim Voucher</option>
+          <option>Klaim Emas</option>
+          <option>Digital</option>
+          <option>Event</option>
+          <option>BU&Merchandise</option>
+          <option>KOL/ Branding</option>
+        </select><br><br>
+
+        <label>Metode Pembayaran</label>
+        <select id="bmMetode" style="width:100%">
+          <option>Cash</option>
+          <option>Transfer</option>
+          <option>Emas</option>
+          <option>Voucher</option>
+        </select><br><br>
+
+        <label>Deskripsi Program</label>
+        <textarea id="bmDesc" style="width:100%"></textarea><br><br>
+
+        <div style="text-align:right">
+          <button onclick="closeBiayaMarketingModal()">Batal</button>
+          <button onclick="submitBiayaMarketingForm()"
+            style="background:#16a34a;color:white">
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+
 
     <script>
         let selectedCustomers = new Set();
@@ -1613,5 +1688,9 @@
 
 
     </script>
+
+
+
+
 </body>
 </html>
