@@ -484,6 +484,7 @@
         padding:20px;
         border-radius:10px;
       ">
+
         <h3>Form Input Biaya Marketing</h3>
 
         <label>Tanggal</label>
@@ -1677,8 +1678,135 @@
 
 
 
+        /* ===============================
+          BIAYA MARKETING MODAL
+        ================================ */
+        let bmSalesMap = {};
 
-        
+
+        function openBiayaMarketingModal() {
+          document.getElementById('biayaModalOverlay').style.display = 'block';
+
+          google.script.run
+            .withSuccessHandler(res => {
+              // CUSTOMER
+              const custSel = document.getElementById('bmCustomer');
+              custSel.innerHTML = '';
+              res.customers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.text = c;
+                custSel.appendChild(opt);
+              });
+
+              // SALES
+              bmSalesMap = res.salesMap;
+              const salesSel = document.getElementById('bmSales');
+              salesSel.innerHTML = '<option value="">-- Pilih Sales --</option>';
+              res.sales.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.text = s;
+                salesSel.appendChild(opt);
+              });
+            })
+            .getMasterBiayaMarketing();
+        }
+
+        function bmUpdateDivisi() {
+          const sales = document.getElementById('bmSales').value;
+          document.getElementById('bmDivisi').value = bmSalesMap[sales] || '';
+        }
+
+
+
+        function closeBiayaMarketingModal() {
+          document.getElementById('biayaModalOverlay').style.display = 'none';
+        }
+
+        /* ===============================
+          DROPDOWN DATA
+        ================================ */
+
+        function populateBmCustomer() {
+          const sel = document.getElementById('bmCustomer');
+          sel.innerHTML = '<option value="">-- Pilih Customer --</option>';
+
+          const customers = [...new Set(rawData.map(d => d.customer).filter(Boolean))].sort();
+          customers.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.text = c;
+            sel.appendChild(opt);
+          });
+        }
+
+        function populateBmSales() {
+          const sel = document.getElementById('bmSales');
+          sel.innerHTML = '<option value="">-- Pilih Sales --</option>';
+
+          const sales = [...new Set(rawData.map(d => d.sales).filter(Boolean))].sort();
+          sales.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.text = s;
+            sel.appendChild(opt);
+          });
+        }
+
+        /* ===============================
+          AUTO DIVISI BY SALES
+        ================================ */
+
+        function bmUpdateDivisi() {
+          const sales = document.getElementById('bmSales').value;
+          const row = rawData.find(d => d.sales === sales);
+          document.getElementById('bmDivisi').value = row ? row.customerType : '';
+        }
+
+        /* ===============================
+          SUBMIT FORM
+        ================================ */
+
+        function submitBiayaMarketingForm() {
+          const data = {
+            tanggal: document.getElementById('bmTanggal').value,
+            customer: document.getElementById('bmCustomer').value,
+            nominal: Number(document.getElementById('bmNominal').value),
+            sales: document.getElementById('bmSales').value,
+            divisi: document.getElementById('bmDivisi').value,
+            jenisAjuan: document.getElementById('bmJenis').value,
+            metodePembayaran: document.getElementById('bmMetode').value,
+            deskripsi: document.getElementById('bmDesc').value
+          };
+
+          if (!data.tanggal || !data.customer || !data.nominal) {
+            alert('Tanggal, Customer, dan Nominal wajib diisi');
+            return;
+          }
+
+          document.getElementById('loading').style.display = 'flex';
+
+          google.script.run
+            .withSuccessHandler(res => {
+              document.getElementById('loading').style.display = 'none';
+
+              if (res.status !== 'success') {
+                alert(res.message);
+                return;
+              }
+
+              closeBiayaMarketingModal();
+              loadOmzetVsCost(); // refresh tabel
+            })
+            .withFailureHandler(err => {
+              document.getElementById('loading').style.display = 'none';
+              console.error(err);
+              alert('Gagal menyimpan data');
+            })
+            .submitBiayaMarketing(data); // ✅ SESUAI Kode.gs
+
+        }
 
         
 
